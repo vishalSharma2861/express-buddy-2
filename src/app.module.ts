@@ -8,6 +8,7 @@ import { AdminModule } from './admin/admin.module';
 
 import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from './auth/auth.module';
+import { PaginationModule } from './pagination/pagination.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AuthModule } from './auth/auth.module';
     MongooseModule.forRoot(ConfigService.keys.MONGO_URL),
     AdminModule,
     AuthModule,
+    PaginationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

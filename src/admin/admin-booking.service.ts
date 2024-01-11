@@ -5,6 +5,7 @@ import { Model } from 'mongoose';
 import { BookingDocument, BookingModel } from './schema/booking.schema';
 import { DriverDocument, DriverModel } from './schema/driver.schema';
 import { UserDocument, UserModel } from './schema/user.schema';
+import { PaginationService } from 'src/pagination/pagination.service';
 
 @Injectable()
 export class AdminBookingService {
@@ -15,6 +16,7 @@ export class AdminBookingService {
     private readonly driverModel: Model<DriverDocument>,
     @InjectModel(BookingModel.name)
     private readonly bookingModel: Model<BookingDocument>,
+    private readonly paginationService: PaginationService,
   ) {}
 
   async allBookings(query) {
@@ -103,18 +105,14 @@ export class AdminBookingService {
       });
 
       const count = await this.bookingModel.aggregate(ags);
-      const countt = count?.[0]?.totalCount;
-      const totalPages = Math.ceil(countt / resPerPage);
+      const totalCount = count?.[0]?.totalCount;
+      const totalPages = Math.ceil(totalCount / resPerPage);
       const hasNextPage = currentPage < totalPages;
 
       return {
-        totalPages,
-        hasNextPage,
+        meta: { totalPages, hasNextPage },
         booking: bookings,
       };
-
-      // const bookings = await this.bookingModel.find().sort({ _id: -1 });
-      // return { message: 'Booking List', data: bookings };
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
