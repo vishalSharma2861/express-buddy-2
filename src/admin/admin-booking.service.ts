@@ -104,13 +104,14 @@ export class AdminBookingService {
         $count: 'totalCount',
       });
 
-      const count = await this.bookingModel.aggregate(ags);
-      const totalCount = count?.[0]?.totalCount;
-      const totalPages = Math.ceil(totalCount / resPerPage);
-      const hasNextPage = currentPage < totalPages;
+      // const count = await this.bookingModel.aggregate(ags);
+      // const totalCount = count?.[0]?.totalCount;
+      // const totalPages = Math.ceil(totalCount / resPerPage);
+      // const hasNextPage = currentPage < totalPages;
 
+      const result = await this.paginationService.bookingPagination(ags, query);
       return {
-        meta: { totalPages, hasNextPage },
+        result,
         booking: bookings,
       };
     } catch (error) {

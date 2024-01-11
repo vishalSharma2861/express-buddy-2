@@ -9,9 +9,11 @@ import { AdminBookingService } from './admin-booking.service';
 import { BookingModel, BookingSchema } from './schema/booking.schema';
 import { UserModel, UserSchema } from './schema/user.schema';
 import { DriverModel, DriverSchema } from './schema/driver.schema';
+import { PaginationModule } from 'src/pagination/pagination.module';
 
 @Module({
   imports: [
+    PaginationModule,
     MongooseModule.forFeature([
       { name: AdminModel.name, schema: AdminSchema },
       { name: BookingModel.name, schema: BookingSchema },

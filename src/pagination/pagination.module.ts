@@ -16,5 +16,6 @@ import { DriverModel, DriverSchema } from 'src/admin/schema/driver.schema';
   ],
   controllers: [PaginationController],
   providers: [PaginationService],
+  exports: [PaginationService],
 })
 export class PaginationModule {}
