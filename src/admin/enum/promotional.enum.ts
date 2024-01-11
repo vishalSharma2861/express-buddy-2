@@ -1,0 +1,14 @@
+export enum PROMOTIONAL_TYPE {
+  AMOUNT = 'AMOUNT',
+  PERCENTAGE = 'PERCENTAGE',
+}
+
+export enum ASSIGN_TYPE {
+  ALL = 'ALL',
+  SPECIFIC = 'SPECIFIC',
+}
+
+export enum LIMIT_TYPE {
+  UNLIMITED = 'UNLIMITED',
+  LIMITED = 'LIMITED',
+}

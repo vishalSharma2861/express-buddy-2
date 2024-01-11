@@ -1,0 +1,20 @@
+user
+
+1> list of send delivery items with all basic info related to items
+
+
+driver
+1. delivery details list...when to deliver..now or later 
+
+2. when driver accept later delivered items and not able to complete ??
+
+
+status
+1. pending
+2. accept
+3. completed
+4. canceled
+
+
+
+
