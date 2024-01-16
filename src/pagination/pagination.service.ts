@@ -27,7 +27,7 @@ export class PaginationService {
       const totalPages = Math.ceil(totalCount / resPerPage);
       const hasNextPage = currentPage < totalPages;
 
-      return { count, totalCount, totalPages, hasNextPage };
+      return { totalCount, totalPages, hasNextPage };
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

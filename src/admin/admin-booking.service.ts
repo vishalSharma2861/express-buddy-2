@@ -6,6 +6,9 @@ import { BookingDocument, BookingModel } from './schema/booking.schema';
 import { DriverDocument, DriverModel } from './schema/driver.schema';
 import { UserDocument, UserModel } from './schema/user.schema';
 import { PaginationService } from 'src/pagination/pagination.service';
+import { BOOKING_STATUS, BOOKING_TYPE } from './enum/booking.enum';
+
+import * as moment from 'moment';
 
 @Injectable()
 export class AdminBookingService {
@@ -19,12 +22,97 @@ export class AdminBookingService {
     private readonly paginationService: PaginationService,
   ) {}
 
+  getStatusFilter(type, filterType) {
+    type = type.toUpperCase();
+    if (filterType === 'status') {
+      switch (type) {
+        case 'AVAILABLE':
+          return { $in: [BOOKING_STATUS.ASSIGNED] };
+
+        case 'ONGOING':
+          return {
+            $in: [
+              BOOKING_STATUS.ACCEPTED,
+              BOOKING_STATUS.STARTED,
+              BOOKING_STATUS.ARRIVED,
+            ],
+          };
+
+        case 'CURRENT':
+          return {
+            $in: [
+              BOOKING_STATUS.PENDING,
+              BOOKING_STATUS.STARTED,
+              BOOKING_STATUS.ASSIGNED,
+              BOOKING_STATUS.ACCEPTED,
+              BOOKING_STATUS.ARRIVED,
+            ],
+          };
+
+        case 'PAST':
+          return {
+            $in: [
+              BOOKING_STATUS.DECLINED,
+              BOOKING_STATUS.CANCELLED,
+              BOOKING_STATUS.COMPLETED,
+              BOOKING_STATUS.CUSTOMER_NO_SHOW,
+            ],
+          };
+
+        case 'COMPLETED':
+          return {
+            $in: [
+              BOOKING_STATUS.COMPLETED,
+              BOOKING_STATUS.CANCELLED,
+              BOOKING_STATUS.DECLINED,
+              BOOKING_STATUS.CUSTOMER_NO_SHOW,
+            ],
+          };
+
+        default:
+          return null;
+      }
+    } else if (filterType === 'bookingType') {
+      switch (type) {
+        case BOOKING_TYPE.NOW:
+          const timeStamp15MLater = moment().add(15, 'minutes').unix();
+          return { $lte: timeStamp15MLater };
+
+        case BOOKING_TYPE.LATER:
+          const timeStamp15MLaterL = moment().add(15, 'minutes').unix();
+          const timeStamp12HLater = moment().add(12, 'hours').unix();
+          return { $gte: timeStamp15MLaterL, $lte: timeStamp12HLater };
+
+        case BOOKING_TYPE.ADVANCE:
+          const timeStamp12HLaterA = moment().add(12, 'hours').unix();
+          return { $gte: timeStamp12HLaterA };
+
+        default:
+          break;
+      }
+    }
+  }
+
   async allBookings(query) {
     try {
-      const { page } = query;
+      const { page, search, type, status: st, bookingType } = query;
       const resPerPage = 10;
       const currentPage = Number(page) || 1;
       const skip = (currentPage - 1) * resPerPage;
+
+      let status = st;
+
+      if (!status) {
+        status = { $ne: BOOKING_STATUS.DELETED };
+      }
+
+      if (status === 'IN_TRANSIT') {
+        status = { $in: [BOOKING_STATUS.STARTED] };
+      } else if (status === 'OTW') {
+        status = { $in: [BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.ARRIVED] };
+      }
+
+      let countFilter = {};
 
       const ags: any[] = [
         {
@@ -95,6 +183,380 @@ export class AdminBookingService {
           },
         },
       ];
+
+      if (bookingType && type && status && search) {
+        const data = { $regex: search, $options: 'i' };
+        countFilter = {
+          BookingAt: this.getStatusFilter(bookingType, 'bookingType'),
+          veletType: type,
+          status: status,
+          $or: [
+            {
+              BookingId: Number(search),
+            },
+            {
+              'user_detail.phoneNumber': search,
+            },
+            {
+              'assigned_to.phoneNumber': search,
+            },
+            {
+              'user_detail.firstName': data,
+            },
+            {
+              'user_detail.lastName': data,
+            },
+            {
+              userFullName: data,
+            },
+            {
+              'assigned_to.firstName': data,
+            },
+            {
+              'assigned_to.lastName': data,
+            },
+            {
+              assignedFullName: data,
+            },
+          ],
+        };
+      } else if (bookingType && type && status) {
+        countFilter = {
+          BookingAt: this.getStatusFilter(bookingType, 'bookingType'),
+          veletType: type,
+          status: status,
+        };
+      } else if (bookingType && type && search) {
+        const data = { $regex: search, $options: 'i' };
+        countFilter = {
+          BookingAt: this.getStatusFilter(bookingType, 'bookingType'),
+          veletType: type,
+          $or: [
+            {
+              BookingId: Number(search),
+            },
+            {
+              'user_detail.phoneNumber': search,
+            },
+            {
+              'assigned_to.phoneNumber': search,
+            },
+            {
+              'user_detail.firstName': data,
+            },
+            {
+              'user_detail.lastName': data,
+            },
+            {
+              userFullName: data,
+            },
+            {
+              'assigned_to.firstName': data,
+            },
+            {
+              'assigned_to.lastName': data,
+            },
+            {
+              assignedFullName: data,
+            },
+          ],
+        };
+      } else if (bookingType && search && status) {
+        const data = { $regex: search, $options: 'i' };
+
+        countFilter = {
+          BookingAt: this.getStatusFilter(bookingType, 'bookingType'),
+          status: status,
+          $or: [
+            {
+              BookingId: Number(search),
+            },
+            {
+              'user_detail.phoneNumber': search,
+            },
+            {
+              'assigned_to.phoneNumber': search,
+            },
+            {
+              'user_detail.firstName': data,
+            },
+            {
+              'user_detail.lastName': data,
+            },
+            {
+              userFullName: data,
+            },
+            {
+              'assigned_to.firstName': data,
+            },
+            {
+              'assigned_to.lastName': data,
+            },
+            {
+              assignedFullName: data,
+            },
+          ],
+        };
+      } else if (search && type && status) {
+        const data = { $regex: search, $options: 'i' };
+
+        countFilter = {
+          $or: [
+            {
+              BookingId: Number(search),
+            },
+            {
+              'user_detail.phoneNumber': search,
+            },
+            {
+              'assigned_to.phoneNumber': search,
+            },
+            {
+              'user_detail.firstName': data,
+            },
+            {
+              'user_detail.lastName': data,
+            },
+            {
+              userFullName: data,
+            },
+            {
+              'assigned_to.firstName': data,
+            },
+            {
+              'assigned_to.lastName': data,
+            },
+            {
+              assignedFullName: data,
+            },
+          ],
+          veletType: type,
+          status: status,
+        };
+      } else if (search && status) {
+        const data = { $regex: search, $options: 'i' };
+
+        countFilter = {
+          $or: [
+            {
+              BookingId: Number(search),
+            },
+            {
+              'user_detail.phoneNumber': search,
+            },
+            {
+              'assigned_to.phoneNumber': search,
+            },
+            {
+              'user_detail.firstName': data,
+            },
+            {
+              'user_detail.lastName': data,
+            },
+            {
+              userFullName: data,
+            },
+            {
+              'assigned_to.firstName': data,
+            },
+            {
+              'assigned_to.lastName': data,
+            },
+            {
+              assignedFullName: data,
+            },
+          ],
+          status: status,
+        };
+      } else if (bookingType && type) {
+        countFilter = {
+          BookingAt: this.getStatusFilter(bookingType, 'bookingType'),
+          status: {
+            $in: [
+              BOOKING_STATUS.PENDING,
+              BOOKING_STATUS.ASSIGNED,
+              BOOKING_STATUS.ACCEPTED,
+            ],
+          },
+          veletType: type,
+        };
+      } else if (bookingType && status) {
+        countFilter = {
+          BookingAt: this.getStatusFilter(bookingType, 'bookingType'),
+          status: status,
+        };
+      } else if (bookingType && search) {
+        const data = { $regex: search, $options: 'i' };
+
+        countFilter = {
+          BookingAt: this.getStatusFilter(bookingType, 'bookingType'),
+          status: {
+            $in: [
+              BOOKING_STATUS.PENDING,
+              BOOKING_STATUS.ASSIGNED,
+              BOOKING_STATUS.ACCEPTED,
+            ],
+          },
+          $or: [
+            {
+              BookingId: Number(search),
+            },
+            {
+              'user_detail.phoneNumber': search,
+            },
+            {
+              'assigned_to.phoneNumber': search,
+            },
+            {
+              'user_detail.firstName': data,
+            },
+            {
+              'user_detail.lastName': data,
+            },
+            {
+              userFullName: data,
+            },
+            {
+              'assigned_to.firstName': data,
+            },
+            {
+              'assigned_to.lastName': data,
+            },
+            {
+              assignedFullName: data,
+            },
+          ],
+        };
+      } else if (type && status) {
+        countFilter = {
+          veletType: type,
+          status: status,
+        };
+      } else if (type && search) {
+        const data = { $regex: search, $options: 'i' };
+
+        countFilter = {
+          veletType: type,
+          $or: [
+            {
+              BookingId: Number(search),
+            },
+            {
+              'user_detail.phoneNumber': search,
+            },
+            {
+              'assigned_to.phoneNumber': search,
+            },
+            {
+              'user_detail.firstName': data,
+            },
+            {
+              'user_detail.lastName': data,
+            },
+            {
+              userFullName: data,
+            },
+            {
+              'assigned_to.firstName': data,
+            },
+            {
+              'assigned_to.lastName': data,
+            },
+            {
+              assignedFullName: data,
+            },
+          ],
+        };
+      } else if (status && search) {
+        const data = { $regex: search, $options: 'i' };
+
+        countFilter = {
+          veletType: status,
+          $or: [
+            {
+              BookingId: Number(search),
+            },
+            {
+              'user_detail.phoneNumber': search,
+            },
+            {
+              'assigned_to.phoneNumber': search,
+            },
+            {
+              'user_detail.firstName': data,
+            },
+            {
+              'user_detail.lastName': data,
+            },
+            {
+              userFullName: data,
+            },
+            {
+              'assigned_to.firstName': data,
+            },
+            {
+              'assigned_to.lastName': data,
+            },
+            {
+              assignedFullName: data,
+            },
+          ],
+        };
+      } else if (search) {
+        const data = { $regex: search, $options: 'i' };
+
+        countFilter['$or'] = [
+          {
+            BookingId: Number(search),
+          },
+          {
+            'user_detail.phoneNumber': search,
+          },
+          {
+            'assigned_to.phoneNumber': search,
+          },
+          {
+            'user_detail.firstName': data,
+          },
+          {
+            'user_detail.lastName': data,
+          },
+          {
+            userFullName: data,
+          },
+          {
+            'assigned_to.firstName': data,
+          },
+          {
+            'assigned_to.lastName': data,
+          },
+          {
+            assignedFullName: data,
+          },
+        ];
+      } else if (type) {
+        countFilter = {
+          veletType: type,
+        };
+      } else if (status) {
+        countFilter = {
+          status: status,
+        };
+      } else if (bookingType) {
+        countFilter = {
+          BookingAt: this.getStatusFilter(bookingType, 'bookingType'),
+          status: {
+            $in: [
+              BOOKING_STATUS.PENDING,
+              BOOKING_STATUS.ASSIGNED,
+              BOOKING_STATUS.ACCEPTED,
+            ],
+          },
+        };
+      }
+
+      countFilter['paymentFailed'] = false;
+      ags.push({ $match: countFilter });
       const bookings = await this.bookingModel
         .aggregate(ags)
         .sort({ _id: -1 })
