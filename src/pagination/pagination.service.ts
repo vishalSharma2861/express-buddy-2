@@ -32,4 +32,38 @@ export class PaginationService {
       throw new InternalServerErrorException(error);
     }
   }
+
+  async customerPagination(ags, query) {
+    try {
+      const { page } = query;
+      const resPerPage = 10;
+      const currentPage = Number(page) || 1;
+      const skip = (currentPage - 1) * resPerPage;
+      const count = await this.userModel.aggregate(ags);
+      const totalCount = count?.[0]?.totalCount;
+      const totalPages = Math.ceil(totalCount / resPerPage);
+      const hasNextPage = currentPage < totalPages;
+
+      return { totalCount, totalPages, hasNextPage };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  async driverPagination(filter, query) {
+    try {
+      const { page } = query;
+      const resPerPage = 10;
+      const currentPage = Number(page) || 1;
+      const skip = (currentPage - 1) * resPerPage;
+      const count = await this.driverModel.countDocuments(filter);
+      const totalCount = count?.[0]?.totalCount;
+      const totalPages = Math.ceil(totalCount / resPerPage);
+      const hasNextPage = currentPage < totalPages;
+
+      return { totalCount, totalPages, hasNextPage };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 }

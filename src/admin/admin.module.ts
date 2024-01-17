@@ -10,6 +10,10 @@ import { BookingModel, BookingSchema } from './schema/booking.schema';
 import { UserModel, UserSchema } from './schema/user.schema';
 import { DriverModel, DriverSchema } from './schema/driver.schema';
 import { PaginationModule } from 'src/pagination/pagination.module';
+import { AdminCustomerController } from './admin-customer.controller';
+import { AdminCustomerService } from './admin-customer.service';
+import { AdminDriverController } from './admin-driver.controller';
+import { AdminDriverService } from './admin-driver.service';
 
 @Module({
   imports: [
@@ -21,7 +25,17 @@ import { PaginationModule } from 'src/pagination/pagination.module';
       { name: DriverModel.name, schema: DriverSchema },
     ]),
   ],
-  controllers: [AdminController, AdminBookingController],
-  providers: [AdminService, AdminBookingService],
+  controllers: [
+    AdminController,
+    AdminBookingController,
+    AdminCustomerController,
+    AdminDriverController,
+  ],
+  providers: [
+    AdminService,
+    AdminBookingService,
+    AdminCustomerService,
+    AdminDriverService,
+  ],
 })
 export class AdminModule {}
