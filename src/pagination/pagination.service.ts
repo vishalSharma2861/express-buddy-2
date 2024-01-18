@@ -56,8 +56,8 @@ export class PaginationService {
       const resPerPage = 10;
       const currentPage = Number(page) || 1;
       const skip = (currentPage - 1) * resPerPage;
-      const count = await this.driverModel.countDocuments(filter);
-      const totalCount = count?.[0]?.totalCount;
+      const count = await this.driverModel.countDocuments(filter).exec();
+      const totalCount = count;
       const totalPages = Math.ceil(totalCount / resPerPage);
       const hasNextPage = currentPage < totalPages;
 

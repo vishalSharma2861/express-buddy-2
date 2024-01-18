@@ -120,7 +120,11 @@ export class AdminDriverService {
         .skip(skip)
         .limit(resPerPage);
 
-      return { data: driver };
+      const result = await this.paginationService.driverPagination(
+        filter,
+        query,
+      );
+      return { result, data: driver };
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -348,11 +352,13 @@ export class AdminDriverService {
         .skip(skip)
         .limit(resPerPage);
 
-      const total = driver.length;
+      const result = await this.paginationService.driverPagination(
+        filter,
+        query,
+      );
 
       return {
-        total,
-
+        result,
         drivers: driver,
       };
     } catch (error) {
