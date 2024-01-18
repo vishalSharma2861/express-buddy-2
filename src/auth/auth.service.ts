@@ -11,6 +11,7 @@ import { InjectModel } from '@nestjs/mongoose';
 
 import { AdminDocument, AdminModel } from 'src/admin/schema/admin.schema';
 import { AdminService } from 'src/admin/admin.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -46,6 +47,46 @@ export class AuthService {
       access_token: accessToken,
     };
   }
+
+  // async login(dto) {
+  //   try {
+  //     const { email, password } = dto;
+  //     console.log('email', email);
+  //     console.log('password', password);
+  //     const userToken = await this.adminModel.findOne({ email: email });
+  //     console.log('userToken', userToken);
+  //     if (!userToken) {
+  //       throw new NotAcceptableException('Invalid email or password');
+  //     }
+  //     const passwordValid = await this.hashService.comparePassword(
+  //       password,
+  //       userToken.password,
+  //     );
+  //     console.log('passwordValid', passwordValid);
+
+  //     if (userToken && passwordValid) {
+  //       const payload = {
+  //         userName: userToken.userName,
+  //         email: userToken.email,
+  //         userId: userToken._id,
+  //       };
+
+  //       const accessToken = this.jwtService.sign(payload);
+  //       userToken.token = accessToken;
+  //       await userToken.save();
+
+  //       return {
+  //         sucess: true,
+  //         msg: 'Login succesfully',
+  //         access_token: accessToken,
+  //       };
+  //     } else {
+  //       throw new NotAcceptableException('Invalid email or password');
+  //     }
+  //   } catch (error) {
+  //     throw new InternalServerErrorException(error);
+  //   }
+  // }
 
   async getProfile(user: any) {
     try {

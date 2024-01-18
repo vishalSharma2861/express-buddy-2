@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserDocument, UserModel } from './schema/user.schema';
 import { PaginationService } from 'src/pagination/pagination.service';
+import Stripe from 'stripe';
 
 @Injectable()
 export class AdminCustomerService {
