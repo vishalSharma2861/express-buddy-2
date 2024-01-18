@@ -18,16 +18,16 @@ import { LoginDto } from 'src/admin/dto/login.dto';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @UseGuards(AuthGuard('local'))
-  @Post('login')
-  async login(@Request() req) {
-    return this.authService.login(req.user);
-  }
-
+  // @UseGuards(AuthGuard('local'))
   // @Post('login')
-  // async login(@Body() dto: LoginDto) {
-  //   return this.authService.login(dto);
+  // async login(@Request() req) {
+  //   return this.authService.login(req.user);
   // }
+
+  @Post('login')
+  async login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')

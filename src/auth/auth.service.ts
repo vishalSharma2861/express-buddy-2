@@ -30,63 +30,60 @@ export class AuthService {
     return null;
   }
 
-  async login(user: any) {
-    const payload = {
-      userName: user.userName,
-      email: user.email,
-      userId: user._id,
-    };
-    const userToken = await this.adminModel.findOne({ _id: user.id });
+  // async login(user: any) {
+  //   const payload = {
+  //     userName: user.userName,
+  //     email: user.email,
+  //     userId: user._id,
+  //   };
+  //   const userToken = await this.adminModel.findOne({ _id: user.id });
 
-    const accessToken = this.jwtService.sign(payload);
-    userToken.token = accessToken;
-    await userToken.save();
-    return {
-      sucess: true,
-      msg: 'Login succesfully',
-      access_token: accessToken,
-    };
-  }
-
-  // async login(dto) {
-  //   try {
-  //     const { email, password } = dto;
-  //     console.log('email', email);
-  //     console.log('password', password);
-  //     const userToken = await this.adminModel.findOne({ email: email });
-  //     console.log('userToken', userToken);
-  //     if (!userToken) {
-  //       throw new NotAcceptableException('Invalid email or password');
-  //     }
-  //     const passwordValid = await this.hashService.comparePassword(
-  //       password,
-  //       userToken.password,
-  //     );
-  //     console.log('passwordValid', passwordValid);
-
-  //     if (userToken && passwordValid) {
-  //       const payload = {
-  //         userName: userToken.userName,
-  //         email: userToken.email,
-  //         userId: userToken._id,
-  //       };
-
-  //       const accessToken = this.jwtService.sign(payload);
-  //       userToken.token = accessToken;
-  //       await userToken.save();
-
-  //       return {
-  //         sucess: true,
-  //         msg: 'Login succesfully',
-  //         access_token: accessToken,
-  //       };
-  //     } else {
-  //       throw new NotAcceptableException('Invalid email or password');
-  //     }
-  //   } catch (error) {
-  //     throw new InternalServerErrorException(error);
-  //   }
+  //   const accessToken = this.jwtService.sign(payload);
+  //   userToken.token = accessToken;
+  //   await userToken.save();
+  //   return {
+  //     sucess: true,
+  //     msg: 'Login succesfully',
+  //     access_token: accessToken,
+  //   };
   // }
+
+  async login(dto) {
+    try {
+      const { email, password } = dto;
+      const userToken = await this.adminModel.findOne({ email: email });
+
+      if (!userToken) {
+        throw new NotAcceptableException('Invalid email or password');
+      }
+      const passwordValid = await this.hashService.comparePassword(
+        password,
+        userToken.password,
+      );
+
+      if (userToken && passwordValid) {
+        const payload = {
+          userName: userToken.userName,
+          email: userToken.email,
+          userId: userToken._id,
+        };
+
+        const accessToken = this.jwtService.sign(payload);
+        userToken.token = accessToken;
+        await userToken.save();
+
+        return {
+          sucess: true,
+          msg: 'Login succesfully',
+          access_token: accessToken,
+        };
+      } else {
+        throw new NotAcceptableException('Invalid email or password');
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 
   async getProfile(user: any) {
     try {
