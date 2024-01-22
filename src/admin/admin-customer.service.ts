@@ -1,16 +1,22 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 
 import { Model } from 'mongoose';
 import { UserDocument, UserModel } from './schema/user.schema';
 import { PaginationService } from 'src/pagination/pagination.service';
-import Stripe from 'stripe';
+import { BookingDocument, BookingModel } from './schema/booking.schema';
 
 @Injectable()
 export class AdminCustomerService {
   constructor(
     @InjectModel(UserModel.name)
     private readonly userModel: Model<UserDocument>,
+    @InjectModel(BookingModel.name)
+    private readonly bookingModel: Model<BookingDocument>,
     private readonly paginationService: PaginationService,
   ) {}
 
@@ -168,6 +174,52 @@ export class AdminCustomerService {
       return {
         result,
         customers: users,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  async customerView(id: string) {
+    try {
+      const user = await this.userModel.findById(id);
+      if (!user) {
+        throw new NotFoundException('User Id not found');
+      }
+      const orders = await this.bookingModel
+        .find({
+          createdBy: user._id,
+        })
+        .select({ _id: 1, totalPayableAmount: 1 })
+        .sort({ _id: -1 });
+
+      const $group = {
+        _id: null,
+        totalAmount: {
+          $sum: '$totalPayableAmount',
+        },
+      };
+      const ags = [
+        {
+          $match: {
+            createdBy: user._id,
+          },
+        },
+        {
+          $group,
+        },
+      ];
+
+      const totalAmount = await this.bookingModel.aggregate(ags);
+      let total = 0;
+      if (totalAmount?.length) {
+        total = totalAmount[0].totalAmount;
+      }
+
+      return {
+        userInfo: user,
+        count: orders.length,
+        fees: total,
       };
     } catch (error) {
       throw new InternalServerErrorException(error);

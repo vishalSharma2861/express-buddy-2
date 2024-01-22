@@ -9,6 +9,7 @@ import { PaginationService } from 'src/pagination/pagination.service';
 import { BOOKING_STATUS, BOOKING_TYPE } from './enum/booking.enum';
 
 import * as moment from 'moment';
+import { BookingQueryDto } from './dto/booking.dto';
 
 @Injectable()
 export class AdminBookingService {
@@ -93,11 +94,12 @@ export class AdminBookingService {
     }
   }
 
-  async allBookings(query) {
+  async allBookings(query: BookingQueryDto) {
     try {
       const { page, search, type, status: st, bookingType } = query;
       const resPerPage = 10;
       const currentPage = Number(page) || 1;
+      console.log('currentPage', currentPage);
       const skip = (currentPage - 1) * resPerPage;
 
       let status = st;

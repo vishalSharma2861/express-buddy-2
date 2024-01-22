@@ -45,5 +45,3 @@ export enum EARNING_LIST_TYPE {
   TODAY = 'TODAY',
   ADMIN = 'ADMIN',
 }
-
-export enum BOOKING_ISSUE {}
