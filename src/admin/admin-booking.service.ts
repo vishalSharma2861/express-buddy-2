@@ -99,7 +99,7 @@ export class AdminBookingService {
       const { page, search, type, status: st, bookingType } = query;
       const resPerPage = 10;
       const currentPage = Number(page) || 1;
-      console.log('currentPage', currentPage);
+
       const skip = (currentPage - 1) * resPerPage;
 
       let status = st;
@@ -573,10 +573,11 @@ export class AdminBookingService {
       // const totalPages = Math.ceil(totalCount / resPerPage);
       // const hasNextPage = currentPage < totalPages;
 
-      const result = await this.paginationService.bookingPagination(ags, query);
+      const meta = await this.paginationService.bookingPagination(ags, query);
       return {
-        result,
-        booking: bookings,
+        message: 'Booking List',
+        data: { bookings },
+        meta,
       };
     } catch (error) {
       throw new InternalServerErrorException(error);
