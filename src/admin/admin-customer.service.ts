@@ -1,6 +1,7 @@
 import {
   Injectable,
   InternalServerErrorException,
+  NotAcceptableException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -9,6 +10,7 @@ import { Model } from 'mongoose';
 import { UserDocument, UserModel } from './schema/user.schema';
 import { PaginationService } from 'src/pagination/pagination.service';
 import { BookingDocument, BookingModel } from './schema/booking.schema';
+import { BOOKING_STATUS } from './enum/booking.enum';
 
 @Injectable()
 export class AdminCustomerService {
@@ -167,13 +169,11 @@ export class AdminCustomerService {
         $count: 'totalCount',
       });
 
-      const result = await this.paginationService.customerPagination(
-        ags,
-        query,
-      );
+      const meta = await this.paginationService.customerPagination(ags, query);
       return {
-        result,
-        customers: users,
+        message: 'Customer List',
+        data: { users },
+        meta,
       };
     } catch (error) {
       throw new InternalServerErrorException(error);
@@ -221,6 +221,52 @@ export class AdminCustomerService {
         count: orders.length,
         fees: total,
       };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  async customerDelete(id: string) {
+    try {
+      const customer = await this.userModel.findById(id);
+      if (!customer) {
+        throw new NotFoundException('customer Id not found');
+      }
+      const bookings = await this.bookingModel.find({
+        createdBy: customer._id,
+      });
+      for (let i = 0; i < bookings.length; i++) {
+        if (
+          [
+            BOOKING_STATUS.PENDING,
+            BOOKING_STATUS.ACCEPTED,
+            BOOKING_STATUS.ASSIGNED,
+            BOOKING_STATUS.ARRIVED,
+            BOOKING_STATUS.STARTED,
+          ].includes(bookings[i].status)
+        ) {
+          throw new NotAcceptableException(
+            'This Customer account can not be banned',
+          );
+        }
+      }
+
+      // await this.notificationService.sendNotification(
+      //   customer,
+      //   'CUSTOMER_DELETE',
+      // );
+      // await this.userService.removeMultipleDevices({
+      //   createdBy: id,
+      // });
+
+      if (customer.isDeleted === false) {
+        customer.isDeleted = true;
+      } else {
+        customer.isDeleted = false;
+      }
+      await customer.save();
+
+      return { message: 'Customer updated successfully' };
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

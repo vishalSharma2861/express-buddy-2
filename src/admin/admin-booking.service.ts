@@ -23,6 +23,69 @@ export class AdminBookingService {
     private readonly paginationService: PaginationService,
   ) {}
 
+  async getCount() {
+    try {
+      const all = await this.bookingModel.countDocuments({
+        status: { $ne: BOOKING_STATUS.DELETED },
+        paymentFailed: false,
+      });
+      const completed = await this.bookingModel.countDocuments({
+        status: BOOKING_STATUS.COMPLETED,
+        paymentFailed: false,
+      });
+      const cancelled = await this.bookingModel.countDocuments({
+        status: BOOKING_STATUS.CANCELLED,
+        paymentFailed: false,
+      });
+      const pending = await this.bookingModel.countDocuments({
+        status: {
+          $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.DECLINED],
+        },
+        paymentFailed: false,
+      });
+      const arrived = await this.bookingModel.countDocuments({
+        status: BOOKING_STATUS.ARRIVED,
+        paymentFailed: false,
+      });
+
+      const assigned = await this.bookingModel.countDocuments({
+        status: BOOKING_STATUS.ASSIGNED,
+        paymentFailed: false,
+      });
+      const inTransit = await this.bookingModel.countDocuments({
+        status: BOOKING_STATUS.STARTED,
+        paymentFailed: false,
+      });
+      const otw = await this.bookingModel.countDocuments({
+        status: {
+          $in: [BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.ARRIVED],
+        },
+        paymentFailed: false,
+      });
+      const noShow = await this.bookingModel.countDocuments({
+        status: BOOKING_STATUS.CUSTOMER_NO_SHOW,
+        paymentFailed: false,
+      });
+
+      return {
+        message: 'Booking status count',
+        data: {
+          all,
+          completed,
+          cancelled,
+          pending,
+          arrived,
+          assigned,
+          inTransit,
+          otw,
+          noShow,
+        },
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
   getStatusFilter(type, filterType) {
     type = type.toUpperCase();
     if (filterType === 'status') {

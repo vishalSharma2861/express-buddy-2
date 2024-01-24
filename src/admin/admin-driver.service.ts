@@ -120,11 +120,8 @@ export class AdminDriverService {
         .skip(skip)
         .limit(resPerPage);
 
-      const result = await this.paginationService.driverPagination(
-        filter,
-        query,
-      );
-      return { result, data: driver };
+      const meta = await this.paginationService.driverPagination(filter, query);
+      return { message: 'Drivers List', data: { driver }, meta };
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
