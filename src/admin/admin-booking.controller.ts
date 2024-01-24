@@ -4,7 +4,7 @@ import { AdminBookingService } from './admin-booking.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { BookingQueryDto } from './dto/booking.dto';
 
-// @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('admin/booking')
 export class AdminBookingController {
   constructor(private readonly adminbookingService: AdminBookingService) {}
