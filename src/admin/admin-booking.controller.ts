@@ -10,12 +10,18 @@ export class AdminBookingController {
   constructor(private readonly adminbookingService: AdminBookingService) {}
 
   @Get('count')
-  bookingCount() {
-    return this.adminbookingService.getCount();
+  bookingCount(@Query() query) {
+    return this.adminbookingService.getCount(query);
   }
 
   @Get('list')
   bookingList(@Query() query: BookingQueryDto) {
     return this.adminbookingService.allBookings(query);
+  }
+
+  @Get('view')
+  bookingView(@Query() query) {
+    const { id, type } = query;
+    return this.adminbookingService.viewBooking(id, type);
   }
 }

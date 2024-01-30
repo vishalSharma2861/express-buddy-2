@@ -25,6 +25,8 @@ export enum BOOKING_STATUS {
   ARRIVED = 'ARRIVED',
   CUSTOMER_NO_SHOW = 'CUSTOMER_NO_SHOW',
   DELETED = 'DELETED',
+  IN_TRANSIT = 'IN_TRANSIT',
+  OTW = 'OTW',
   // only for notification (it is not for booking status)
   DELAY_CHARGES = 'DELAY_CHARGES',
 }

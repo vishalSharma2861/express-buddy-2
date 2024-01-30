@@ -14,6 +14,10 @@ import { AdminCustomerController } from './admin-customer.controller';
 import { AdminCustomerService } from './admin-customer.service';
 import { AdminDriverController } from './admin-driver.controller';
 import { AdminDriverService } from './admin-driver.service';
+import {
+  BookingTransactionModel,
+  BookingTransactionSchema,
+} from './schema/booking-transaction.schema';
 
 @Module({
   imports: [
@@ -23,6 +27,7 @@ import { AdminDriverService } from './admin-driver.service';
       { name: BookingModel.name, schema: BookingSchema },
       { name: UserModel.name, schema: UserSchema },
       { name: DriverModel.name, schema: DriverSchema },
+      { name: BookingTransactionModel.name, schema: BookingTransactionSchema },
     ]),
   ],
   controllers: [

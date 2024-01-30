@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 
 import { Model } from 'mongoose';
@@ -6,10 +10,20 @@ import { BookingDocument, BookingModel } from './schema/booking.schema';
 import { DriverDocument, DriverModel } from './schema/driver.schema';
 import { UserDocument, UserModel } from './schema/user.schema';
 import { PaginationService } from 'src/pagination/pagination.service';
-import { BOOKING_STATUS, BOOKING_TYPE } from './enum/booking.enum';
+import {
+  BOOKING_STATUS,
+  BOOKING_TYPE,
+  PAYMENT_TYPE,
+  VELET_TYPE,
+} from './enum/booking.enum';
+import { ObjectId } from 'mongodb';
 
 import * as moment from 'moment';
 import { BookingQueryDto } from './dto/booking.dto';
+import {
+  BookingTransactionDocument,
+  BookingTransactionModel,
+} from './schema/booking-transaction.schema';
 
 @Injectable()
 export class AdminBookingService {
@@ -20,14 +34,41 @@ export class AdminBookingService {
     private readonly driverModel: Model<DriverDocument>,
     @InjectModel(BookingModel.name)
     private readonly bookingModel: Model<BookingDocument>,
+    @InjectModel(BookingTransactionModel.name)
+    private readonly bookingTransactionModel: Model<BookingTransactionDocument>,
     private readonly paginationService: PaginationService,
   ) {}
 
-  async getCount() {
+  async getCount(query) {
     try {
+      const { type } = query;
+
+      let timeStamp;
+
+      let countTime;
+
+      if (type === 'now') {
+        timeStamp = moment().add(15, 'minutes').unix();
+        countTime = await this.bookingModel.countDocuments({
+          BookingAt: {
+            $lte: timeStamp,
+          },
+        });
+      } else if (type === 'ADVANCE') {
+        timeStamp = moment().add(12, 'hours').unix();
+        countTime = await this.bookingModel.countDocuments({
+          BookingAt: {
+            $gte: timeStamp,
+          },
+        });
+      }
+
+      console.log('countTime', countTime);
+
       const all = await this.bookingModel.countDocuments({
         status: { $ne: BOOKING_STATUS.DELETED },
         paymentFailed: false,
+        // BookingAt: type === 'ADVANCE' ? { $gte: timeStamp } : undefined,
       });
       const completed = await this.bookingModel.countDocuments({
         status: BOOKING_STATUS.COMPLETED,
@@ -82,6 +123,7 @@ export class AdminBookingService {
         },
       };
     } catch (error) {
+      console.error(error);
       throw new InternalServerErrorException(error);
     }
   }
@@ -641,6 +683,177 @@ export class AdminBookingService {
         message: 'Booking List',
         data: { bookings },
         meta,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  async viewBooking(id: string, type: string) {
+    try {
+      const bookingType = type;
+      const bookingId = new ObjectId(id);
+
+      const ags = [
+        {
+          $match: {
+            _id: bookingId,
+          },
+        },
+        {
+          $lookup: {
+            from: 'usermodels',
+            localField: 'createdBy',
+            foreignField: '_id',
+            as: 'user_detail',
+          },
+        },
+
+        {
+          $unwind: {
+            path: '$user_detail',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'drivermodels',
+            localField: 'assignedTo',
+            foreignField: '_id',
+            as: 'assigned_to',
+          },
+        },
+
+        {
+          $unwind: {
+            path: '$assigned_to',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        {
+          $project: {
+            _id: 1,
+            veletType: 1,
+            BookingId: 1,
+            status: 1,
+            note: 1,
+            adminNote: 1,
+            BookingAt: 1,
+            startPoint: 1,
+            endPoint: 1,
+            otherPoints: 1,
+            totalAmount: 1,
+            otherAmounts: 1,
+            tip: 1,
+            amount: 1,
+            promotional: 1,
+            paymentType: 1,
+            totalPayableAmount: 1,
+
+            delayCharge: 1,
+            createdAt: 1,
+
+            'user_detail._id': 1,
+            'user_detail.firstName': 1,
+            'user_detail.lastName': 1,
+            'user_detail.phoneNumber': 1,
+            'user_detail.email': 1,
+            'user_detail.carPlateNumber': 1,
+            'user_detail.vehicleType': 1,
+            'user_detail.phoneCode': 1,
+
+            'assigned_to._id': 1,
+            'assigned_to.firstName': 1,
+            'assigned_to.lastName': 1,
+            'assigned_to.phoneNumber': 1,
+            'assigned_to.phoneCode': 1,
+          },
+        },
+      ];
+
+      const booking = await this.bookingModel.aggregate(ags);
+      const bookingDetail = booking[0];
+      if (!bookingDetail) {
+        throw new NotFoundException('Booking Id not found');
+      }
+
+      let surgeType = '';
+      let surgeValue = '';
+      let authorizedStatus = '';
+      let additionalStop = 0;
+      let authorizedAmount = 0;
+      let capturedAmount = 0;
+      let paymentType;
+      const selectedTimezone = 'Asia/Singapore';
+      let paymentStatus;
+
+      if (bookingDetail.veletType === VELET_TYPE.NORMAL) {
+        surgeType = bookingDetail.veletType;
+        surgeValue = bookingDetail.otherAmounts.normalSurge;
+      } else if (bookingDetail.veletType === VELET_TYPE.PRIORITY) {
+        surgeType = bookingDetail.veletType;
+        surgeValue = bookingDetail.otherAmounts.prioritySurge;
+      }
+
+      let transaction;
+
+      if (bookingDetail.paymentType === PAYMENT_TYPE.CARD) {
+        paymentType = PAYMENT_TYPE.CARD;
+        transaction = await this.bookingTransactionModel.findOne({
+          bookingId: bookingDetail._id,
+        });
+
+        // if (transaction) {
+        //   const paymentIntent = await stripeConfig.paymentIntents.retrieve(
+        //     transaction.piId,
+        //   );
+
+        //   paymentStatus = paymentIntent.status;
+        //   authorizedAmount = paymentIntent.amount / 100;
+        //   if (paymentIntent.amount_received > 0) {
+        //     capturedAmount = paymentIntent.amount_received / 100;
+        //   }
+
+        //   if (paymentIntent.status === 'requires_capture') {
+        //     authorizedStatus = 'Payment authorized, but not yet captured';
+        //   } else if (paymentIntent.status === 'requires_payment_method') {
+        //     authorizedStatus = 'Payment Failed';
+        //   }
+        // }
+      }
+
+      if (bookingDetail.otherPoints.length > 0) {
+        additionalStop =
+          bookingDetail.otherPoints.length *
+          bookingDetail.otherAmounts.additionalStopCharge;
+      }
+
+      let link;
+      if (bookingType === 'now') {
+        link = 'order_management_now';
+      } else if (bookingType === 'later') {
+        link = 'order_management_latter';
+      } else if (bookingType === 'advance') {
+        link = 'order_management_advance';
+      } else {
+        link = 'order_management_valet_orders';
+      }
+
+      return {
+        message: 'Booking view',
+        bookingDetail,
+        bookingType,
+        surgeType,
+        surgeValue,
+        transaction,
+        additionalStop,
+        authorizedStatus,
+        authorizedAmount,
+        capturedAmount,
+        paymentType,
+        selectedTimezone,
+        paymentStatus,
       };
     } catch (error) {
       throw new InternalServerErrorException(error);
